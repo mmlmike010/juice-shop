@@ -219,10 +219,20 @@ To verify that an AI agent (like GitHub Copilot or Claude) is correctly using th
 3. **Check Skill Content**: "Show me the checklist for verifying a new challenge."
    - *Expected Result*: The agent should find and display the content from `./.ai/skills/verify-challenge/checklists/challenge-checklist.md`.
 
+## Cursor Cloud specific instructions
+
+Durable, non-obvious notes for agents running in the Cursor Cloud environment (dependencies already installed by the startup update script). Standard commands live in the "Testing Requirements" section above; only the caveats below are Cloud-specific.
+
+- **Bootstrapping**: A plain `npm install` bootstraps everything — its `postinstall` runs `cd frontend && npm install` and then builds both the frontend (`build:frontend`) and the server (`build:server`). No separate frontend install/build step is needed.
+- **Running in dev**: Use `npm run serve:dev` (not `npm start`, which serves the prebuilt production bundle). `serve:dev` runs two processes via `concurrently`: the backend (`tsx watch app.ts`, port **3000**) and the Angular dev server (`ng serve`, port **4200**, which proxies API/`/rest` calls to `:3000`). Open **http://localhost:4200** for development; the backend also serves the built app directly on `:3000`. The Angular dev server's first bundle takes several seconds after the backend is already listening — wait for `Application bundle generation complete` / `Local: http://localhost:4200/`.
+- **Data stores are embedded**: SQLite (Sequelize) and MarsDB run in-process and are re-seeded on every startup (`sequelize.sync({ force: true })`). No external database service is required, so a fresh start always yields a clean dataset.
+- **`npm run test:api` has expected failures in this environment** (~18), which are NOT caused by code changes: (a) tests that require external internet resources (e.g. PasteBin/StackOverflow in `internet-resources.test.ts`) fail because outbound egress is restricted; (b) some intentional-vulnerability challenge tests are sensitive to resolved dependency versions (e.g. `sanitize-html` now strips a payload the challenge expects to survive). `npm run test:server` and `npm run test:frontend` pass fully.
+- **Chatbot ("Juicy")**: the optional LLM backend (`application.chatBot.llmApiUrl`, default `http://localhost:11434/v1`) is not running; the app boots fine and the chat route degrades gracefully.
+
 ## Remember
 
 AI agents are productivity tools for enhancing development. You (or the person reviewing the PR) are responsible for the quality, correctness, and security of all contributions. Always review AI-generated code critically, test thoroughly, and follow the project's guidelines.
 
 ---
 
-**Last Updated**: April 2026
+**Last Updated**: July 2026
