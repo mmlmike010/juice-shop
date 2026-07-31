@@ -49,8 +49,27 @@ export const cutOffPoisonNullByte = (str: string) => {
   return str
 }
 
-export const isAuthorized = () => expressJwt(({ secret: publicKey }) as any)
-export const denyAll = () => expressJwt({ secret: '' + Math.random() } as any)
+const isUnsignedJwt = (token?: string) => {
+  if (!token) {
+    return false
+  }
+  const decoded = jws.decode(token)
+  const algorithm = decoded?.header?.alg
+  return typeof algorithm === 'string' && algorithm.toLowerCase() === 'none'
+}
+
+const rejectUnsignedJwt = (jwtMiddleware: ReturnType<typeof expressJwt>) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (isUnsignedJwt(utils.jwtFrom(req))) {
+      res.status(401).json({ status: 'error', message: 'Invalid token algorithm' })
+      return
+    }
+    jwtMiddleware(req, res, next)
+  }
+}
+
+export const isAuthorized = () => rejectUnsignedJwt(expressJwt(({ secret: publicKey, algorithms: ['RS256'] }) as any))
+export const denyAll = () => rejectUnsignedJwt(expressJwt({ secret: '' + Math.random(), algorithms: ['RS256'] } as any))
 export const authorize = (user = {}) => jwt.sign(user, privateKey, { expiresIn: '6h', algorithm: 'RS256' })
 export const verify = (token: string) => token ? (jws.verify as ((token: string, secret: string) => boolean))(token, publicKey) : false
 export const decode = (token: string) => { return jws.decode(token)?.payload }
