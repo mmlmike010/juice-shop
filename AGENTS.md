@@ -219,6 +219,17 @@ To verify that an AI agent (like GitHub Copilot or Claude) is correctly using th
 3. **Check Skill Content**: "Show me the checklist for verifying a new challenge."
    - *Expected Result*: The agent should find and display the content from `./.ai/skills/verify-challenge/checklists/challenge-checklist.md`.
 
+## Cursor Cloud specific instructions
+
+This section captures non-obvious, durable caveats for running/testing Juice Shop in the Cursor Cloud environment. Standard commands live in the "Testing Requirements" section above and in `package.json`; only the gotchas are noted here.
+
+- **Install & run**: `npm install` (the `postinstall` hook installs `frontend/` deps and builds both frontend and server) is the only setup step. Run the app with `npm start` (serves the built app + Angular SPA on a single Express server at `http://localhost:3000`). For backend hot-reload during dev use `npm run serve:dev`. The SQLite DB (`data/juiceshop.sqlite`) and the in-process MarsDB NoSQL store are seeded automatically on startup; there is no external database to run.
+- **Port 3000 conflict with tests**: `npm run test:server` and `npm run test:api` start their own server and the `preconditionValidation` test asserts on port 3000 availability. If the app (`npm start`/`npm run serve`) is already running, these tests fail with `EADDRINUSE`/`address already in use :::3000` and cascade into many spurious failures. Stop the running app (free port 3000) before running the server/API test suites.
+- **Restricted network**: The cloud VM blocks outbound internet. Several API tests depend on external resources and will fail here, e.g. the "Required Internet resource" PasteBin tests, external domain reachability, and `/rest/saveLoginIp` (True-Client-IP). This is environmental, not a code regression.
+- **Pre-existing API test failures (~18)**: On a clean checkout, a handful of security-challenge API tests fail because they assert on outdated dependency behavior (a newer `sanitize-html` strips XSS payloads the challenge tests expect to pass through; the `notevil`/`vm` sandbox in `routes/b2bOrder.ts` no longer produces the expected timeout/error). These are unrelated to environment setup. Lint, server tests (333), and frontend Vitest tests (1281) all pass clean.
+- **Optional integrations are unavailable**: The LLM chatbot (expects an OpenAI-compatible endpoint, e.g. Ollama at `http://localhost:11434/v1`, via `LLM_API_KEY`) and the Web3/NFT challenges (`ALCHEMY_API_KEY`, `alchemy.com`) are not configured. Startup logs emit warnings and the related challenges/tests are skipped; the core app is unaffected.
+- **E2E (Cypress)**: `npm run test:e2e` requires a running server (`npm start &` first) and a browser; it is not part of `npm test`.
+
 ## Remember
 
 AI agents are productivity tools for enhancing development. You (or the person reviewing the PR) are responsible for the quality, correctness, and security of all contributions. Always review AI-generated code critically, test thoroughly, and follow the project's guidelines.
