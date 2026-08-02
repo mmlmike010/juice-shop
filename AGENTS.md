@@ -225,4 +225,16 @@ AI agents are productivity tools for enhancing development. You (or the person r
 
 ---
 
+## Cursor Cloud specific instructions
+
+Dependencies are installed automatically before each session via the startup script (`npm install`), whose `postinstall` also installs the frontend deps and builds both the frontend (`frontend/dist/frontend`) and the server (`build/`). You normally do not need to reinstall. Standard lint/test/build/run commands are already documented above in this file and in `package.json`; the notes below only cover non-obvious caveats.
+
+- **Node version**: the VM pins `node` to `/exec-daemon/node` (currently v22.x), which takes PATH precedence over any `nvm`-installed version. This is within the supported `22 - 26` engines range, so use it as-is; `nvm use <other>` will not actually change the `node` on PATH.
+- **Running the app**: run `npm start` from the repo root (serves the pre-built Angular frontend and all API routes on port `3000`). It requires the build outputs to exist first (the startup `npm install` produces them via `postinstall`). For live frontend/backend hot reload use `npm run serve:dev` (Angular dev server on `4200`, backend/API on `3000`). Do not run `npm start` from `frontend/` — there it resolves to the Angular `ng serve` script instead.
+- **`npm run test:api` requires port 3000 to be free**: the API tests boot the server and run its startup preconditions, one of which asserts port `3000` is available. If the app is already running (e.g. an `npm start` you left up on `3000`), every API test file aborts with `Exiting due to unsatisfied precondition!`. Stop the running app before `npm run test:api`. (`test:server` and `test:frontend` are unaffected.)
+- **Network-dependent tests**: a subset of API tests (`test/api/internet-resources.test.ts`) fetch external URLs (e.g. `pastebin.com`) and fail with `fetch failed` under restricted network egress. This is environmental, not a code defect.
+- **Optional integrations are absent by default**: the Alchemy Web3 API (`ALCHEMY_API_KEY`) and the LLM/chatbot backend (Ollama on `localhost:11434`, or a cloud LLM via `LLM_API_KEY`) are not configured, so the startup logs print WARNINGs and the related Web3/chatbot challenges won't work. This is expected and does not block the core shop.
+
+---
+
 **Last Updated**: April 2026
