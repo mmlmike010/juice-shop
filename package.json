@@ -211,6 +211,9 @@
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.57.1"
   },
+  "overrides": {
+    "undici": "6.28.0"
+  },
   "engines": {
     "node": "22 - 26"
   },
