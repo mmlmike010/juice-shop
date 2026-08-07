@@ -203,4 +203,32 @@ void describe('insecurity', () => {
       assert.equal(security.hmac(''), 'f052179ec5894a2e79befa8060cfcb517f1e14f7f6222af854377b6481ae953e')
     })
   })
+
+  void describe('isAuthorized', () => {
+    void it('rejects JWTs that use algorithm none', () => {
+      const header = Buffer.from(JSON.stringify({ alg: 'none', typ: 'JWT' })).toString('base64url')
+      const payload = Buffer.from(JSON.stringify({ data: { email: 'jwtn3d@juice-sh.op' }, iat: 1508639612, exp: 9999999999 })).toString('base64url')
+      const unsignedToken = `${header}.${payload}.`
+      const req = { headers: { authorization: `Bearer ${unsignedToken}` } } as unknown as Request
+      const res = {
+        statusCode: 0,
+        body: undefined as unknown,
+        status (code: number) {
+          this.statusCode = code
+          return this
+        },
+        json (body: unknown) {
+          this.body = body
+          return this
+        }
+      }
+      let nextCalled = false
+
+      security.isAuthorized()(req, res as any, () => { nextCalled = true })
+
+      assert.equal(res.statusCode, 401)
+      assert.deepEqual(res.body, { status: 'error', message: 'Invalid token algorithm' })
+      assert.equal(nextCalled, false)
+    })
+  })
 })
