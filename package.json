@@ -227,5 +227,10 @@
     "arm64",
     "arm"
   ],
+  "overrides": {
+    "hbs": {
+      "handlebars": "4.7.10"
+    }
+  },
   "heroku-run-build-script": true
 }
